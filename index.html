@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Text Compare Tool v2</title>
+  <title>Text Compare Tool v3</title>
   <script src="https://cdn.jsdelivr.net/npm/diff@5.0.0/dist/diff.min.js"></script>
   <style>
     body {
@@ -16,12 +15,20 @@
       height: 200px;
       margin: 10px;
     }
-    .diff {
-      white-space: pre-wrap;
-      font-family: monospace;
+    input[type="file"] {
+      margin: 0 10px 10px 10px;
+    }
+    .result-container {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .diff-box {
+      flex: 1;
       border: 1px solid #ccc;
       padding: 10px;
-      margin-top: 20px;
+      white-space: pre-wrap;
+      font-family: monospace;
     }
     .added {
       background-color: #d4fcbc;
@@ -32,33 +39,85 @@
     .unchanged {
       background-color: transparent;
     }
+    .line {
+      display: flex;
+    }
+    .line-number {
+      width: 30px;
+      color: #888;
+      text-align: right;
+      margin-right: 10px;
+    }
   </style>
 </head>
 <body>
 
-<h2>Text Compare Tool v1</h2>
+<h2>Text Compare Tool v3 (Line Numbers + File Upload)</h2>
 
+<div>
+  <input type="file" onchange="loadFile(event, 'text1')">
+  <input type="file" onchange="loadFile(event, 'text2')">
+</div>
 <div>
   <textarea id="text1" placeholder="Paste or upload file 1..."></textarea>
   <textarea id="text2" placeholder="Paste or upload file 2..."></textarea>
 </div>
 <button onclick="compare()">Compare</button>
 
-<div id="output" class="diff"></div>
+<div class="result-container">
+  <div id="output1" class="diff-box"></div>
+  <div id="output2" class="diff-box"></div>
+</div>
 
 <script>
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
+  }
+
+  function loadFile(event, textareaId) {
+    const reader = new FileReader();
+    reader.onload = function() {
+      document.getElementById(textareaId).value = reader.result;
+    };
+    reader.readAsText(event.target.files[0]);
+  }
+
   function compare() {
     const text1 = document.getElementById('text1').value;
     const text2 = document.getElementById('text2').value;
 
     const diff = Diff.diffLines(text1, text2);
-    let result = '';
+    let output1 = '', output2 = '';
+    let lineNum1 = 1, lineNum2 = 1;
+
     diff.forEach(part => {
       const className = part.added ? 'added' :
                         part.removed ? 'removed' : 'unchanged';
-      result += `<span class="${className}">${part.value}</span>`;
+      const lines = part.value.split('\n');
+
+      lines.forEach((line, i) => {
+        if (i === lines.length - 1 && line === '') return;
+        const escapedLine = escapeHtml(line);
+
+        if (part.added) {
+          output1 += `<div class="line"><span class="line-number"></span><span class="unchanged"></span></div>`;
+          output2 += `<div class="line"><span class="line-number">${lineNum2++}</span><span class="${className}">${escapedLine}</span></div>`;
+        } else if (part.removed) {
+          output1 += `<div class="line"><span class="line-number">${lineNum1++}</span><span class="${className}">${escapedLine}</span></div>`;
+          output2 += `<div class="line"><span class="line-number"></span><span class="unchanged"></span></div>`;
+        } else {
+          output1 += `<div class="line"><span class="line-number">${lineNum1++}</span><span class="${className}">${escapedLine}</span></div>`;
+          output2 += `<div class="line"><span class="line-number">${lineNum2++}</span><span class="${className}">${escapedLine}</span></div>`;
+        }
+      });
     });
-    document.getElementById('output').innerHTML = result;
+
+    document.getElementById('output1').innerHTML = output1;
+    document.getElementById('output2').innerHTML = output2;
   }
 </script>
 
