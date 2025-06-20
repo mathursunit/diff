@@ -3,123 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Text Compare Tool v3</title>
+  <title>Text Compare Tool v4</title>
   <script src="https://cdn.jsdelivr.net/npm/diff@5.0.0/dist/diff.min.js"></script>
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 20px;
-    }
-    textarea {
-      width: 45%;
-      height: 200px;
-      margin: 10px;
-    }
-    input[type="file"] {
-      margin: 0 10px 10px 10px;
-    }
-    .result-container {
-      display: flex;
-      gap: 20px;
-      margin-top: 20px;
-    }
-    .diff-box {
-      flex: 1;
-      border: 1px solid #ccc;
-      padding: 10px;
-      white-space: pre-wrap;
-      font-family: monospace;
-    }
-    .added {
-      background-color: #d4fcbc;
-    }
-    .removed {
-      background-color: #fbb6c2;
-    }
-    .unchanged {
-      background-color: transparent;
-    }
-    .line {
-      display: flex;
-    }
-    .line-number {
-      width: 30px;
-      color: #888;
-      text-align: right;
-      margin-right: 10px;
-    }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-800 min-h-screen p-6 font-mono">
 
-<h2>Text Compare Tool v3 (Line Numbers + File Upload)</h2>
+  <div class="max-w-7xl mx-auto">
+    <h2 class="text-3xl font-bold mb-6 text-center">Text Compare Tool v4</h2>
 
-<div>
-  <input type="file" onchange="loadFile(event, 'text1')">
-  <input type="file" onchange="loadFile(event, 'text2')">
-</div>
-<div>
-  <textarea id="text1" placeholder="Paste or upload file 1..."></textarea>
-  <textarea id="text2" placeholder="Paste or upload file 2..."></textarea>
-</div>
-<button onclick="compare()">Compare</button>
+    <div class="flex flex-col md:flex-row md:justify-center mb-4 gap-4">
+      <div>
+        <input type="file" onchange="loadFile(event, 'text1')" class="mb-2 block">
+        <textarea id="text1" placeholder="Paste or upload file 1..." class="w-full h-48 p-2 border rounded resize-none"></textarea>
+      </div>
+      <div>
+        <input type="file" onchange="loadFile(event, 'text2')" class="mb-2 block">
+        <textarea id="text2" placeholder="Paste or upload file 2..." class="w-full h-48 p-2 border rounded resize-none"></textarea>
+      </div>
+    </div>
 
-<div class="result-container">
-  <div id="output1" class="diff-box"></div>
-  <div id="output2" class="diff-box"></div>
-</div>
+    <div class="text-center">
+      <button onclick="compare()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded shadow">Compare</button>
+    </div>
 
-<script>
-  function escapeHtml(str) {
-    return str.replace(/&/g, "&amp;")
-              .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;")
-              .replace(/"/g, "&quot;")
-              .replace(/'/g, "&#039;");
-  }
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div id="output1" class="bg-white border rounded p-4 overflow-x-auto text-sm"></div>
+      <div id="output2" class="bg-white border rounded p-4 overflow-x-auto text-sm"></div>
+    </div>
+  </div>
 
-  function loadFile(event, textareaId) {
-    const reader = new FileReader();
-    reader.onload = function() {
-      document.getElementById(textareaId).value = reader.result;
-    };
-    reader.readAsText(event.target.files[0]);
-  }
+  <script>
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+    }
 
-  function compare() {
-    const text1 = document.getElementById('text1').value;
-    const text2 = document.getElementById('text2').value;
+    function loadFile(event, textareaId) {
+      const reader = new FileReader();
+      reader.onload = function() {
+        document.getElementById(textareaId).value = reader.result;
+      };
+      reader.readAsText(event.target.files[0]);
+    }
 
-    const diff = Diff.diffLines(text1, text2);
-    let output1 = '', output2 = '';
-    let lineNum1 = 1, lineNum2 = 1;
+    function compare() {
+      const text1 = document.getElementById('text1').value;
+      const text2 = document.getElementById('text2').value;
 
-    diff.forEach(part => {
-      const className = part.added ? 'added' :
-                        part.removed ? 'removed' : 'unchanged';
-      const lines = part.value.split('\n');
+      const diff = Diff.diffLines(text1, text2);
+      let output1 = '', output2 = '';
+      let lineNum1 = 1, lineNum2 = 1;
 
-      lines.forEach((line, i) => {
-        if (i === lines.length - 1 && line === '') return;
-        const escapedLine = escapeHtml(line);
+      diff.forEach(part => {
+        const className = part.added ? 'bg-green-100' :
+                          part.removed ? 'bg-red-100' : '';
+        const lines = part.value.split('\n');
 
-        if (part.added) {
-          output1 += `<div class="line"><span class="line-number"></span><span class="unchanged"></span></div>`;
-          output2 += `<div class="line"><span class="line-number">${lineNum2++}</span><span class="${className}">${escapedLine}</span></div>`;
-        } else if (part.removed) {
-          output1 += `<div class="line"><span class="line-number">${lineNum1++}</span><span class="${className}">${escapedLine}</span></div>`;
-          output2 += `<div class="line"><span class="line-number"></span><span class="unchanged"></span></div>`;
-        } else {
-          output1 += `<div class="line"><span class="line-number">${lineNum1++}</span><span class="${className}">${escapedLine}</span></div>`;
-          output2 += `<div class="line"><span class="line-number">${lineNum2++}</span><span class="${className}">${escapedLine}</span></div>`;
-        }
+        lines.forEach((line, i) => {
+          if (i === lines.length - 1 && line === '') return;
+          const escapedLine = escapeHtml(line);
+
+          if (part.added) {
+            output1 += `<div class='flex'><span class='w-8 text-right pr-2 text-gray-400'></span><span class='flex-1'></span></div>`;
+            output2 += `<div class='flex ${className}'><span class='w-8 text-right pr-2 text-gray-400'>${lineNum2++}</span><span class='flex-1'>${escapedLine}</span></div>`;
+          } else if (part.removed) {
+            output1 += `<div class='flex ${className}'><span class='w-8 text-right pr-2 text-gray-400'>${lineNum1++}</span><span class='flex-1'>${escapedLine}</span></div>`;
+            output2 += `<div class='flex'><span class='w-8 text-right pr-2 text-gray-400'></span><span class='flex-1'></span></div>`;
+          } else {
+            output1 += `<div class='flex'><span class='w-8 text-right pr-2 text-gray-400'>${lineNum1++}</span><span class='flex-1'>${escapedLine}</span></div>`;
+            output2 += `<div class='flex'><span class='w-8 text-right pr-2 text-gray-400'>${lineNum2++}</span><span class='flex-1'>${escapedLine}</span></div>`;
+          }
+        });
       });
-    });
 
-    document.getElementById('output1').innerHTML = output1;
-    document.getElementById('output2').innerHTML = output2;
-  }
-</script>
+      document.getElementById('output1').innerHTML = output1;
+      document.getElementById('output2').innerHTML = output2;
+    }
+  </script>
 
 </body>
 </html>
